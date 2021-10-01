@@ -90,18 +90,10 @@ defmodule Fly.RPC do
   @doc """
   Executes the function on the remote node and waits for the response up to
   `timeout` length.
-
-  ## Options
-
-  - `:timeout` - Duration in ms to wait for the remotely executed function to complete. Defaults to `5_000`.
   """
   def rpc(node, timeout, module, func, args) do
     caller = self()
     ref = make_ref()
-
-    Logger.info(
-      "ATTEMPTING RPC call to Node #{inspect(node)} on #{inspect(module)}.#{inspect(func)}(#{inspect(args)}) - my region: #{inspect(Fly.my_region())}"
-    )
 
     # Perform the RPC call to the remote node and wait for the response
     Node.spawn_link(node, __MODULE__, :__local_rpc__, [
@@ -119,8 +111,7 @@ defmodule Fly.RPC do
   # Private function that can be executed on a remote node in the cluster. Used
   # to execute arbitrary function from a trusted caller.
   def __local_rpc__([caller, ref, module, func | args]) do
-    IO.puts("EXECUTING __local_rpc__ on #{Node.self()} for #{module}.#{func}(#{inspect(args)})")
-    result = apply(module, func, args) |> IO.inspect(label: "RESULT OF CALL")
+    result = apply(module, func, args)
     send(caller, {ref, result})
   end
 
