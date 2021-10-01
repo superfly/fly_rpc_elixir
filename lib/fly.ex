@@ -1,18 +1,31 @@
 defmodule Fly do
   @moduledoc """
-  Documentation for `Fly`.
+  Functions and features to help Elixir applications more easily take advantage
+  of the features that Fly.io provides.
   """
 
   @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Fly.hello()
-      :world
-
+  Return the configured primary region. Reads and requires an ENV setting for
+  `PRIMARY_REGION`.
   """
-  def hello do
-    :world
+  def primary_region do
+    System.fetch_env!("PRIMARY_REGION")
+  end
+
+  @doc """
+  Return the configured current region. Reads the `FLY_REGION` ENV setting
+  that's available when deployed on the Fly.io platform.
+  """
+  def my_region do
+    System.fetch_env!("FLY_REGION")
+  end
+
+  @doc """
+  Return if the app instance is running in the primary region or not. Boolean
+  result.
+  """
+  @spec is_primary? :: no_return() | boolean()
+  def is_primary? do
+    my_region() == primary_region()
   end
 end
