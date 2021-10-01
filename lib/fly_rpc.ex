@@ -87,48 +87,6 @@ defmodule Fly.RPC do
     end
   end
 
-  # @doc """
-  # Executes the function on the remote node and waits for the response up to
-  # `timeout` length.
-
-  # ## Options
-
-  # - `:lsn` - Boolean value. When true, a DB query is run to return the current
-  #   `Fly.LSN` value for the database. Defaults to `true`. When false, no query
-  #   is run and a `nil` returned in the place of the LSN.
-  # - `:timeout` - Duration in ms to wait for the remotely executed function to complete. Defaults to `5_000`.
-  # """
-  # def rpc(node, module, func, args, opts) do
-  #   timeout = Keyword.get(opts, :timeout, 5_000)
-  #   request_lsn = Keyword.get(opts, :lsn, true)
-  #   caller = self()
-  #   ref = make_ref()
-
-  #   Logger.info(
-  #     "ATTEMPTING RPC call to Node #{inspect(node)} on #{module}.#{func} with opts #{inspect(opts)} - my region: #{Fly.my_region()}"
-  #   )
-
-  #   # Perform the RPC call to the remote node and wait for the response
-  #   Node.spawn_link(node, __MODULE__, :__local_rpc__, [
-  #     [caller, ref, module, func | args],
-  #     [lsn: request_lsn]
-  #   ])
-
-  #   {lsn_value, result} =
-  #     receive do
-  #       {^ref, {_lsn_value, _result} = returned} -> returned
-  #     after
-  #       timeout -> exit(:timeout)
-  #     end
-
-  #   # RPC call was performed. If we have an lsn_value, register to be notified and block while we wait
-  #   if lsn_value do
-  #     Fly.LSN.Tracker.request_and_await_notification(lsn_value)
-  #   end
-
-  #   result
-  # end
-
   @doc """
   Executes the function on the remote node and waits for the response up to
   `timeout` length.
@@ -157,23 +115,6 @@ defmodule Fly.RPC do
     end
   end
 
-  # @doc false
-  # # local node rpc dispatch. Not to be called directly
-  # def __local_rpc__([caller, ref, module, func | args], opts) do
-  #   result = apply(module, func, args)
-
-  #   lsn_value =
-  #     if Keyword.get(opts, :lsn, true) do
-  #       # This code is executed via RPC in the primary region. Use the
-  #       # `local_repo` here which will have write access.
-  #       Fly.LSN.current_wal_insert(Fly.local_repo())
-  #     else
-  #       nil
-  #     end
-
-  #   send(caller, {ref, {lsn_value, result}})
-  # end
-
   @doc false
   # Private function that can be executed on a remote node in the cluster. Used
   # to execute arbitrary function from a trusted caller.
@@ -197,7 +138,7 @@ defmodule Fly.RPC do
     # connecting Observer, there is no `__local_rpc__` function for using at
     # all. This may fail with a timeout in situations like that.
     Node.spawn(node, __MODULE__, :__local_rpc__, [
-      [caller, ref, Kernel, :function_exported?, [Fly, :my_region, 0]]
+      [caller, ref, Kernel, :function_exported?, Fly, :my_region, 0]
     ])
 
     receive do
