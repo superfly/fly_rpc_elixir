@@ -7,12 +7,12 @@ defmodule Fly.RPC do
   Assumes each node is running the `Fly.RPC` server in its supervision tree and
   exports `FLY_REGION` environment variable to identify the fly region.
 
-  To run code on a specific region call `rpc_region/4`. A node found within
-  the given region will be chosen at random. Raises if no nodes exist on the
-  given region.
+  To run code on a specific region call `rpc_region/4`. A node found within the
+  given region will be chosen at random. Raises if no nodes exist on the given
+  region.
 
-  The special `:primary` region may be passed to run the rpc against the
-  region identified by the `PRIMARY_REGION` environment variable.
+  The special `:primary` region may be passed to run the rpc against the region
+  identified by the `PRIMARY_REGION` environment variable.
 
   ## Examples
 
@@ -24,6 +24,13 @@ defmodule Fly.RPC do
 
       > rpc_region(:primary, String, :upcase, ["fly"])
       "FLY"
+
+  ## Server
+
+  The GenServer's responsibility is just to monitor other nodes as they enter
+  and leave the cluster. It maintains a list of nodes and the Fly.io region
+  where they are deployed in an ETS table that other processes can use to find
+  and initiate their own RPC calls to.
   """
   use GenServer
   require Logger
@@ -135,7 +142,7 @@ defmodule Fly.RPC do
     ref = make_ref()
 
     Logger.info(
-      "ATTEMPTING RPC call to Node #{inspect(node)} on #{inspect module}.#{inspect func}(#{inspect args}) - my region: #{inspect Fly.my_region()}"
+      "ATTEMPTING RPC call to Node #{inspect(node)} on #{inspect(module)}.#{inspect(func)}(#{inspect(args)}) - my region: #{inspect(Fly.my_region())}"
     )
 
     # Perform the RPC call to the remote node and wait for the response
@@ -183,7 +190,23 @@ defmodule Fly.RPC do
   Support may not exist on the remote node in a "first roll out" scenario.
   """
   def is_rpc_supported?(node) do
-    rpc(node, 3_000, Kernel, :function_exported?, [Fly, :my_region, 0])
+    caller = self()
+    ref = make_ref()
+
+    # NOTE: Not using `spawn_link` because on remote hidden nodes like for
+    # connecting Observer, there is no `__local_rpc__` function for using at
+    # all. This may fail with a timeout in situations like that.
+    Node.spawn(node, __MODULE__, :__local_rpc__, [
+      [caller, ref, Kernel, :function_exported?, [Fly, :my_region, 0]]
+    ])
+
+    receive do
+      {^ref, result} -> result
+    after
+      1_300 ->
+        Logger.warn("Timed out waiting for RPC supported test. Assuming `false`.")
+        false
+    end
   end
 
   ## RPC calls run on local node
