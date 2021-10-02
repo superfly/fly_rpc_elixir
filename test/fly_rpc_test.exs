@@ -5,11 +5,11 @@ defmodule Fly.RPCTest do
 
   alias Fly.RPC
 
-  describe "put_node/2" do
-    test "if new node doesn't support RPC, no change"
+  # describe "put_node/2" do
+  #   test "if new node doesn't support RPC, no change"
 
-    test "if node supports RPC, track node and it's region"
-  end
+  #   test "if node supports RPC, track node and it's region"
+  # end
 
   describe "drop_node/2" do
     test "handles a node dropping that isn't in the cache or state" do

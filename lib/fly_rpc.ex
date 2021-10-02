@@ -161,7 +161,16 @@ defmodule Fly.RPC do
 
   def handle_info({:nodeup, node_name}, state) do
     Logger.debug("nodeup #{node_name}")
-    {:noreply, put_node(state, node_name)}
+
+    # Only react/track visible nodes (hidden ones are for IEx, etc)
+    new_state =
+      if Enum.member?(Node.list(:visible), node_name) do
+        put_node(state, node_name)
+      else
+        state
+      end
+
+    {:noreply, new_state}
   end
 
   def handle_info({:nodedown, node_name}, state) do
