@@ -2,6 +2,8 @@
 
 Helps a clustered Elixir application know what [Fly.io](https:://fly.io) region it is deployed in, if that is the primary region, and provides features for executing a function through RPC (Remote Procedure Call) on another node by specifying the region to run it in.
 
+[Online Documentation](https://hexdocs.pm/fly_rpc)
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed

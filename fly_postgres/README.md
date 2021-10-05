@@ -3,6 +3,8 @@
 Helps take advantage of geographically distributed Elixir applications using
 Ecto and PostgreSQL in a primary/replica configuration on [Fly.io](https://fly.io).
 
+[Online Documentation](https://hexdocs.pm/fly_postgres)
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
@@ -149,7 +151,7 @@ The following changes were made:
 
 ## Usage
 
-### Simple Usage
+### Automatic Usage
 
 Normal calls like `MyApp.Repo.all(User)` are performed on the local replica
 repo. They are unchanged and work exactly as you'd expect.
@@ -175,5 +177,5 @@ the local replica.
 In this way, it becomes seamless for you and your code! You get the benefits of
 being globally distributed and running closer to your users without re-designing your application!
 
-### More Advanced Usage
+### Explicit Usage
 
