@@ -74,8 +74,7 @@ defmodule Fly.Postgres do
 
   """
   def local_repo do
-    # Application.fetch_env!(:fly_postgres, :local_repo)
-    Application.fetch_env!(:core, :local_repo)
+    Application.fetch_env!(:fly_postgres, :local_repo)
   end
 
   @doc """

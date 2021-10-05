@@ -76,6 +76,18 @@ directly on the local replica. Other modifying functions like `insert`,
 calls to a node in your Elixir cluster running in the primary region. That
 ability is provided by the `fly_rpc` library.
 
+### Config Files
+
+In your `config/config.exs`, add something like the following:
+
+```elixir
+# Configure database repository
+config :fly_postgres, :local_repo, MyApp.Repo.Local
+```
+
+This helps the library to know which repo to use when talking to the database to
+ensure the needed replications have completed.
+
 ### Repo References
 
 The goal with using this repo wrapper, is to leave all of your application code
