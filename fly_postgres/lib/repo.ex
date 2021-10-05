@@ -28,7 +28,7 @@ defmodule Fly.Repo do
 
     # Dynamically configure the database url based for runtime environment.
     def init(_type, config) do
-      {:ok, Keyword.put(config, :url, FlyPostgres.database_url())}
+      {:ok, Keyword.put(config, :url, Fly.Postgres.database_url())}
     end
   end
 
