@@ -7,9 +7,12 @@ defmodule Fly.MixProject do
       version: "0.1.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
+      name: "Fly RPC",
+      source_url: "https://github.com/superfly/fly_rpc_elixir/tree/main/fly_rpc",
       description: description(),
       deps: deps(),
-      package: package()
+      package: package(),
+      docs: docs()
     ]
   end
 
@@ -22,13 +25,23 @@ defmodule Fly.MixProject do
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
-    []
+    [
+      {:ex_doc, "~> 0.25", only: :dev}
+    ]
   end
 
   defp description do
     """
     Library for making RPC calls to nodes in other Fly.io regions.
     """
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      # logo: "path/to/logo.png",
+      extras: ["README.md"]
+    ]
   end
 
   defp package do

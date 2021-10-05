@@ -145,12 +145,31 @@ The following changes were made:
 
 - Added the `Fly.RPC` GenServer
 - Start your Repo
-- Added `Fly.LSN.Tracker`
-
-
+- Added `Fly.Postgres.LSN.Tracker`
 
 ## Usage
 
-Normal calls like `MyApp.Repo.all(User)` are performed on the local replica repo.
+Normal calls like `MyApp.Repo.all(User)` are performed on the local replica
+repo. They are unchanged and work exactly as you'd expect.
 
-Calls that modify the database (insert, update, delete), are performed through an RPC (Remote Procedure Call) on a  the primary
+Calls that _modify_ the database like "insert, update, and delete", are
+performed through an RPC (Remote Procedure Call) in your application running in
+the primary region.
+
+In order for this to work, your application must be clustered together and
+configured to identify which region is the "primary" region. Additionally, your
+application needs to be deployed to multiple regions. There must be a deployment
+in the primary region as well.
+
+A call to `MyApp.Repo.insert(changeset)` will be proxied to perform the insert
+in the primary region. If the function is already running in the primary region,
+it just executes normally locally. If the function is running in a non-primary
+region, it makes a RPC execution to run on the primary. Additionally, it gets
+the Postgres LSN (Log Sequence Number) for the database after making the change.
+The calling function then blocks, waits for the async database replication
+process to complete, and continues on once the data modification has replayed on
+the local replica.
+
+In this way, it becomes seamless for you and your code! You get the power of
+being distributed without the overhead of having to re-design your application!
+
