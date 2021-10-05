@@ -142,7 +142,11 @@ defmodule Fly.Postgres.LSN.Tracker do
     case last_replay do
       # if replication is not enabled, log message and don't schedule future checks
       %Fly.Postgres.LSN{source: :not_replicating} = _lsn ->
-        Logger.info("Replication does not appear to be confgured on DB. Not running log checks.")
+        if not Fly.is_primary?() do
+          # The primary DB reports that it is not receiving replication replay
+          # messages... which is correct but is not a problem.
+          Logger.warn("Replication does not appear to be confgured on DB. Not running log checks.")
+        end
 
       _other ->
         # process the ETS entries for notification requests
