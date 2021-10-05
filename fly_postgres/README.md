@@ -18,12 +18,8 @@ def deps do
 end
 ```
 
-Note that `fly_postgres` depends on `fly_rpc` so it will be pulled along as
-well. The configuration section includes the relevant parts for `fly_rpc`.
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/fly_postgres](https://hexdocs.pm/fly_postgres).
+Note that `fly_postgres` depends on `fly_rpc` so it will be pulled in as well.
+The configuration section below includes the relevant parts for `fly_rpc`.
 
 ## Configuration
 
