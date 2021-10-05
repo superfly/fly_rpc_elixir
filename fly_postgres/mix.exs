@@ -7,9 +7,12 @@ defmodule FlyPostgres.MixProject do
       version: "0.1.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
+      name: "Fly Postgres",
+      source_url: "https://github.com/superfly/fly_rpc_elixir/tree/main/fly_postgres",
       description: description(),
       deps: deps(),
-      package: package()
+      package: package(),
+      docs: docs()
     ]
   end
 
@@ -24,7 +27,8 @@ defmodule FlyPostgres.MixProject do
   defp deps do
     [
       {:fly_rpc, git: "https://github.com/superfly/fly_rpc_elixir.git", branch: "main"},
-      {:postgrex, ">= 0.0.0"}
+      {:postgrex, ">= 0.0.0"},
+      {:ex_doc, "~> 0.25", only: :dev}
     ]
   end
 
@@ -32,6 +36,14 @@ defmodule FlyPostgres.MixProject do
     """
     Library for working with local read-replica postgres databases and performing writes through RPC calls to other nodes in the primary Fly.io region.
     """
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      # logo: "path/to/logo.png",
+      extras: ["README.md"]
+    ]
   end
 
   defp package do
