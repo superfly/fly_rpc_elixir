@@ -116,12 +116,23 @@ defmodule Fly.Postgres do
     {lsn_value, result} =
       Fly.RPC.rpc_region(:primary, __MODULE__, :__rpc_lsn__, [module, func, args], opts)
 
+    Logger.info(
+      "TESTTESTTESTTEST --- LSN VALUE --- #{inspect(lsn_value)} - #{inspect(module)}.#{inspect(func)}/#{inspect(length(args))}"
+    )
+
     case Fly.Postgres.LSN.Tracker.request_and_await_notification(lsn_value) do
       :ready ->
+        Logger.info(
+          "TESTTESTTESTTEST --- LSN AWAIT RECEIVED --- #{inspect(lsn_value)} - #{inspect(module)}.#{inspect(func)}/#{inspect(length(args))}"
+        )
+
         result
 
       {:error, :timeout} ->
-        Logger.error("Awaiting RPC notification for #{inspect lsn_value} timed out")
+        Logger.error(
+          "Awaiting RPC notification for #{inspect(lsn_value)} timed out - #{inspect(module)}.#{inspect(func)}/#{inspect(length(args))}"
+        )
+
         exit(:timeout)
     end
   end
