@@ -329,7 +329,7 @@ defmodule Fly.Repo do
       end
 
       def __exec_on_primary__(func, args) do
-        FlyPostgres.rpc_and_wait(@local_repo, func, args, timeout: @timeout)
+        Fly.Postgres.rpc_and_wait(@local_repo, func, args, timeout: @timeout)
       end
     end
   end
