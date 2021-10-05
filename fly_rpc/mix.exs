@@ -46,9 +46,9 @@ defmodule Fly.MixProject do
 
   defp package do
     [
-      files: ["lib", "mix.exs", "README*", "LICENSE*"],
+      files: ["lib", "mix.exs", "README*", "../LICENSE*"],
       maintainers: ["Mark Ericksen"],
-      licenses: ["MIT"],
+      licenses: ["Apache-2.0"],
       links: %{"GitHub" => "https://github.com/superfly/fly_rpc_elixir/fly_rpc"}
     ]
   end
