@@ -27,6 +27,30 @@ This example configuration says that the Sydney Australia region is the
   PRIMARY_REGION = "syd"
 ```
 
+Add `Fly.RPC` to your application's supervision tree.
+
+```elixir
+defmodule MyApp.Application do
+  use Application
+
+  def start(_type, _args) do
+    # ...
+
+    children = [
+      # Start the RPC server
+      {Fly.RPC, []},
+      #...
+    ]
+
+    # ...
+  end
+end
+```
+
+This starts a GenServer that reaches out to other nodes in the cluster to learn
+what Fly.io regions they are located in. The GenServer caches those results in a
+local ETS table for fast access.
+
 ## Usage
 
 The Fly.io platform already provides and ENV value of `FLY_REGION` which this library accesses.
