@@ -92,7 +92,7 @@ defmodule Fly.RPC do
   `timeout` length.
   """
   def rpc(node, timeout, module, func, args) do
-    if verbose_logging? do
+    if verbose_logging?() do
       Logger.info(
         "Starting RPC from #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
       )
@@ -108,7 +108,7 @@ defmodule Fly.RPC do
 
     receive do
       {^ref, result} ->
-        if verbose_logging? do
+        if verbose_logging?() do
           Logger.info(
             "RECEIVED RPC in #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
           )
@@ -117,7 +117,7 @@ defmodule Fly.RPC do
         result
     after
       timeout ->
-        if verbose_logging? do
+        if verbose_logging?() do
           Logger.error(
             "TIMEOUT for RPC in #{Fly.my_region()} calling #{Fly.mfa_string(module, func, args)}"
           )
@@ -212,7 +212,7 @@ defmodule Fly.RPC do
   def put_node(state, node_name) do
     case region(node_name) do
       {:ok, region} ->
-        Logger.info("Discovered node #{inspect node_name} in region #{region}")
+        Logger.info("Discovered node #{inspect(node_name)} in region #{region}")
         region_nodes = region_nodes(state.tab, region)
         :ets.insert(state.tab, {region, [node_name | region_nodes]})
 
@@ -228,7 +228,7 @@ defmodule Fly.RPC do
     # find the node information for the node going down.
     case get_node(state, node_name) do
       {^node_name, region} ->
-        Logger.info("Dropping node #{inspect node_name} for region #{region}")
+        Logger.info("Dropping node #{inspect(node_name)} for region #{region}")
         # get the list of nodes currently registered in that region
         region_nodes = region_nodes(state.tab, region)
         # Remove the node from the known regions and update the local cache
