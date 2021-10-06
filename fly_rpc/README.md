@@ -84,3 +84,7 @@ Fly.RPC.rpc_region(:primary, String, :upcase, ["fly"])
 Underneath the call, it's using `Node.spawn_link/4`. This spawns a new process on a node in the desired region. Normally, that spawn becomes an asynchronous process and what you get back is a `pid`. In this case, the call executes on the other node and the caller is blocked until the result is received or the request times out.
 
 By blocking the process, this makes it much easier to reason about your application code.
+
+## Features
+
+- [ ] Instrument with telemetry

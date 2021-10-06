@@ -72,7 +72,8 @@ defmodule Fly.Postgres.LSN.Tracker do
   to be received. The timeout defaults to 3s after which time it stops waiting
   and returns an `{:error, :timeout}` response.
   """
-  @spec await_notification(Fly.Postgres.LSN.t(), timeout :: integer) :: :ready | {:error, :timeout}
+  @spec await_notification(Fly.Postgres.LSN.t(), timeout :: integer) ::
+          :ready | {:error, :timeout}
   def await_notification(%Fly.Postgres.LSN{source: :insert} = lsn, timeout \\ 3_000) do
     pid = self()
 
@@ -104,10 +105,30 @@ defmodule Fly.Postgres.LSN.Tracker do
       if replicated?(lsn) do
         :ready
       else
+        if verbose_logging? do
+          Logger.info("Requesting LSN tracking notification for #{inspect(lsn)}")
+        end
+
         request_notification(lsn)
-        await_notification(lsn, timeout)
+        result = await_notification(lsn, timeout)
+
+        if verbose_logging? do
+          case result do
+            :ready ->
+              Logger.info("Requesting LSN tracking notification for #{inspect(lsn)}")
+
+            {:error, :timeout} ->
+              Logger.info("Timeout waiting for LSN notification on #{inspect(lsn)}")
+          end
+        end
+
+        result
       end
     end
+  end
+
+  defp verbose_logging? do
+    Application.get_env(:fly_postgres, :verbose_logging) || false
   end
 
   ###
@@ -145,7 +166,9 @@ defmodule Fly.Postgres.LSN.Tracker do
         if not Fly.is_primary?() do
           # The primary DB reports that it is not receiving replication replay
           # messages... which is correct but is not a problem.
-          Logger.warn("Replication does not appear to be confgured on DB. Not running log checks.")
+          Logger.warn(
+            "Replication does not appear to be confgured on DB. Not running log checks."
+          )
         end
 
       _other ->
