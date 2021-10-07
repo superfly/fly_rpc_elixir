@@ -52,13 +52,13 @@ defmodule Fly.RPC do
   end
 
   @doc """
-  Asks a node what Fly region it's running in. Does this through an RPC call. If
-  the function for asking isn't supported (code not running there yet), return
-  an `:error`.
+  Asks a node what Fly region it's running in.
+
+  Returns `:error` if RPC is not supported on remote node.
   """
   def region(node) do
     if is_rpc_supported?(node) do
-      {:ok, rpc(node, 3_000, Fly, :my_region, [])}
+      {:ok, rpc(node, Fly, :my_region, [])}
     else
       Logger.info("Detected Fly RPC support is not available on node #{inspect(node)}")
       :error
@@ -83,45 +83,41 @@ defmodule Fly.RPC do
 
       node = Enum.random(available_nodes)
 
-      rpc(node, timeout, module, func, args)
+      rpc(node, module, func, args, timeout)
     end
   end
 
   @doc """
-  Executes the function on the remote node and waits for the response up to
-  `timeout` length.
+  Executes the function on the remote node and waits for the response.
+
+  Exits after `timeout` milliseconds.
   """
-  def rpc(node, timeout, module, func, args) do
-    if verbose_logging?() do
-      Logger.info(
-        "Starting RPC from #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
-      )
-    end
+  def rpc(node, module, func, args, timeout \\ 5000) do
+    verbose_log(:info, fn ->
+      "Starting RPC from #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
+    end)
 
     caller = self()
     ref = make_ref()
 
     # Perform the RPC call to the remote node and wait for the response
-    Node.spawn_link(node, __MODULE__, :__local_rpc__, [
-      [caller, ref, module, func | args]
-    ])
+    {:ok, _} =
+      Node.spawn_link(node, __MODULE__, :__local_rpc__, [
+        [caller, ref, module, func | args]
+      ])
 
     receive do
       {^ref, result} ->
-        if verbose_logging?() do
-          Logger.info(
-            "RECEIVED RPC in #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
-          )
-        end
+        verbose_log(:info, fn ->
+          "RECEIVED RPC in #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
+        end)
 
         result
     after
       timeout ->
-        if verbose_logging?() do
-          Logger.error(
-            "TIMEOUT for RPC in #{Fly.my_region()} calling #{Fly.mfa_string(module, func, args)}"
-          )
-        end
+        verbose_log(:error, fn ->
+          "TIMEOUT for RPC in #{Fly.my_region()} calling #{Fly.mfa_string(module, func, args)}"
+        end)
 
         exit(:timeout)
     end
@@ -135,10 +131,6 @@ defmodule Fly.RPC do
     send(caller, {ref, result})
   end
 
-  defp verbose_logging? do
-    Application.get_env(:fly_rpc, :verbose_logging) || false
-  end
-
   @doc """
   Executes a function on the remote node to determine if the RPC API support is
   available.
@@ -146,21 +138,13 @@ defmodule Fly.RPC do
   Support may not exist on the remote node in a "first roll out" scenario.
   """
   def is_rpc_supported?(node) do
-    caller = self()
-    ref = make_ref()
+    # note: use :erpc.call once erlang 23+ is reauired
+    case :rpc.call(node, Kernel, :function_exported?, [Fly, :my_region, 0], 5000) do
+      result when is_boolean(result) ->
+        result
 
-    # NOTE: Not using `spawn_link` because on remote hidden nodes like for
-    # connecting Observer, there is no `__local_rpc__` function for using at
-    # all. This may fail with a timeout in situations like that.
-    Node.spawn(node, __MODULE__, :__local_rpc__, [
-      [caller, ref, Kernel, :function_exported?, Fly, :my_region, 0]
-    ])
-
-    receive do
-      {^ref, result} -> result
-    after
-      1_300 ->
-        Logger.warn("Timed out waiting for RPC supported test. Assuming `false`.")
+      {:badrpc, reason} ->
+        Logger.warn("Failed RPC supported test on node #{inspect(node)}, got: #{inspect(reason)}")
         false
     end
   end
@@ -188,7 +172,7 @@ defmodule Fly.RPC do
 
     # Only react/track visible nodes (hidden ones are for IEx, etc)
     new_state =
-      if Enum.member?(Node.list(:visible), node_name) do
+      if node_name in Node.list(:visible) do
         put_node(state, node_name)
       else
         state
@@ -253,5 +237,11 @@ defmodule Fly.RPC do
 
   defp get_node(state, name) do
     Enum.find(state.nodes, fn {n, _region} -> n == name end)
+  end
+
+  defp verbose_log(kind, func) do
+    if Application.get_env(:fly_rpc, :verbose_logging) do
+      Logger.log(kind, func)
+    end
   end
 end
