@@ -4,7 +4,7 @@ defmodule FlyPostgres.MixProject do
   def project do
     [
       app: :fly_postgres,
-      version: "0.1.3",
+      version: "0.1.4",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       name: "Fly Postgres",
@@ -51,7 +51,7 @@ defmodule FlyPostgres.MixProject do
       files: ["lib", "mix.exs", "README*", "../LICENSE*"],
       maintainers: ["Mark Ericksen"],
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => "https://github.com/superfly/fly_rpc_elixir/fly_postgres"}
+      links: %{"GitHub" => "https://github.com/superfly/fly_rpc_elixir/tree/main/fly_postgres"}
     ]
   end
 end

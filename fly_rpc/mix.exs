@@ -4,7 +4,7 @@ defmodule Fly.MixProject do
   def project do
     [
       app: :fly_rpc,
-      version: "0.1.1",
+      version: "0.1.2",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       name: "Fly RPC",
@@ -49,7 +49,7 @@ defmodule Fly.MixProject do
       files: ["lib", "mix.exs", "README*", "../LICENSE*"],
       maintainers: ["Mark Ericksen"],
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => "https://github.com/superfly/fly_rpc_elixir/fly_rpc"}
+      links: %{"GitHub" => "https://github.com/superfly/fly_rpc_elixir/tree/main/fly_rpc"}
     ]
   end
 end
