@@ -105,14 +105,14 @@ defmodule Fly.Postgres.LSN.Tracker do
       if replicated?(lsn) do
         :ready
       else
-        if verbose_logging?() do
-          Logger.info("Requesting LSN tracking notification for #{inspect(lsn)}")
-        end
+        verbose_log(:info, fn ->
+          "Requesting LSN tracking notification for #{inspect(lsn)}"
+        end)
 
         request_notification(lsn)
         result = await_notification(lsn, timeout)
 
-        if verbose_logging?() do
+        verbose_log(:info, fn ->
           case result do
             :ready ->
               Logger.info("Requesting LSN tracking notification for #{inspect(lsn)}")
@@ -120,15 +120,17 @@ defmodule Fly.Postgres.LSN.Tracker do
             {:error, :timeout} ->
               Logger.info("Timeout waiting for LSN notification on #{inspect(lsn)}")
           end
-        end
+        end)
 
         result
       end
     end
   end
 
-  defp verbose_logging? do
-    Application.get_env(:fly_postgres, :verbose_logging) || false
+  defp verbose_log(kind, func) do
+    if Application.get_env(:fly_postgres, :verbose_logging) do
+      Logger.log(kind, func)
+    end
   end
 
   ###

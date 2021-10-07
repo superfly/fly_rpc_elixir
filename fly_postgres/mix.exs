@@ -26,7 +26,7 @@ defmodule FlyPostgres.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:fly_rpc, "~> 0.1.1"},
+      {:fly_rpc, "~> 0.1.3"},
       {:postgrex, ">= 0.0.0"},
       {:ex_doc, "~> 0.25", only: :dev}
     ]
