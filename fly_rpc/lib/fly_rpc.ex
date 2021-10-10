@@ -101,7 +101,7 @@ defmodule Fly.RPC do
     ref = make_ref()
 
     # Perform the RPC call to the remote node and wait for the response
-    {:ok, _} =
+    _pid =
       Node.spawn_link(node, __MODULE__, :__local_rpc__, [
         [caller, ref, module, func | args]
       ])
