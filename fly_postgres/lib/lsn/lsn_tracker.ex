@@ -69,12 +69,12 @@ defmodule Fly.Postgres.LSN.Tracker do
 
   @doc """
   Blocking function that waits for a `request_notification/2` response message
-  to be received. The timeout defaults to 3s after which time it stops waiting
+  to be received. The timeout defaults to 5s after which time it stops waiting
   and returns an `{:error, :timeout}` response.
   """
   @spec await_notification(Fly.Postgres.LSN.t(), timeout :: integer) ::
           :ready | {:error, :timeout}
-  def await_notification(%Fly.Postgres.LSN{source: :insert} = lsn, timeout \\ 3_000) do
+  def await_notification(%Fly.Postgres.LSN{source: :insert} = lsn, timeout \\ 5_000) do
     pid = self()
 
     receive do
