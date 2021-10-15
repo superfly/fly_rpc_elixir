@@ -94,7 +94,7 @@ defmodule Fly.RPC do
   """
   def rpc(node, module, func, args, timeout \\ 5000) do
     verbose_log(:info, fn ->
-      "Starting RPC from #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
+      "RPC REQ from #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
     end)
 
     caller = self()
@@ -109,14 +109,14 @@ defmodule Fly.RPC do
     receive do
       {^ref, result} ->
         verbose_log(:info, fn ->
-          "RECEIVED RPC in #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
+          "RPC RECV response in #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
         end)
 
         result
     after
       timeout ->
         verbose_log(:error, fn ->
-          "TIMEOUT for RPC in #{Fly.my_region()} calling #{Fly.mfa_string(module, func, args)}"
+          "RPC TIMEOUT in #{Fly.my_region()} calling #{Fly.mfa_string(module, func, args)}"
         end)
 
         exit(:timeout)

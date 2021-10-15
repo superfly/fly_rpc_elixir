@@ -106,7 +106,7 @@ defmodule Fly.Postgres.LSN.Tracker do
         :ready
       else
         verbose_log(:info, fn ->
-          "Requesting LSN tracking notification for #{inspect(lsn)}"
+          "LSN REQ notification for #{inspect(lsn)}"
         end)
 
         request_notification(lsn)
@@ -115,10 +115,10 @@ defmodule Fly.Postgres.LSN.Tracker do
         verbose_log(:info, fn ->
           case result do
             :ready ->
-              "Requesting LSN tracking notification for #{inspect(lsn)}"
+              "LSN RECV tracking notification for #{inspect(lsn)}"
 
             {:error, :timeout} ->
-              "Timeout waiting for LSN notification on #{inspect(lsn)}"
+              "LSN TIMEOUT waiting on #{inspect(lsn)}"
           end
         end)
 
