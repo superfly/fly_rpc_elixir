@@ -91,7 +91,7 @@ defmodule Fly.Repo do
       See `Ecto.Repo.delete/2` for full documentation.
       """
       def delete(struct_or_changeset, opts \\ []) do
-        unquote(__MODULE__).__exec_on_primary__(:delete, [struct_or_changeset, opts])
+        unquote(__MODULE__).__exec_on_primary__(:delete, [struct_or_changeset, opts], opts)
       end
 
       @doc """
@@ -100,7 +100,7 @@ defmodule Fly.Repo do
       See `Ecto.Repo.delete!/2` for full documentation.
       """
       def delete!(struct_or_changeset, opts \\ []) do
-        unquote(__MODULE__).__exec_on_primary__(:delete!, [struct_or_changeset, opts])
+        unquote(__MODULE__).__exec_on_primary__(:delete!, [struct_or_changeset, opts], opts)
       end
 
       @doc """
@@ -109,7 +109,7 @@ defmodule Fly.Repo do
       See `Ecto.Repo.delete_all/2` for full documentation.
       """
       def delete_all(queryable, opts \\ []) do
-        unquote(__MODULE__).__exec_on_primary__(:delete_all, [queryable, opts])
+        unquote(__MODULE__).__exec_on_primary__(:delete_all, [queryable, opts], opts)
       end
 
       @doc """
@@ -163,7 +163,7 @@ defmodule Fly.Repo do
       See `Ecto.Repo.insert/2` for full documentation.
       """
       def insert(struct_or_changeset, opts \\ []) do
-        unquote(__MODULE__).__exec_on_primary__(:insert, [struct_or_changeset, opts])
+        unquote(__MODULE__).__exec_on_primary__(:insert, [struct_or_changeset, opts], opts)
       end
 
       @doc """
@@ -172,7 +172,7 @@ defmodule Fly.Repo do
       See `Ecto.Repo.insert!/2` for full documentation.
       """
       def insert!(struct_or_changeset, opts \\ []) do
-        unquote(__MODULE__).__exec_on_primary__(:insert!, [struct_or_changeset, opts])
+        unquote(__MODULE__).__exec_on_primary__(:insert!, [struct_or_changeset, opts], opts)
       end
 
       @doc """
@@ -185,7 +185,7 @@ defmodule Fly.Repo do
           schema_or_source,
           entries_or_query,
           opts
-        ])
+        ], opts)
       end
 
       @doc """
@@ -194,7 +194,7 @@ defmodule Fly.Repo do
       See `Ecto.Repo.insert_or_update/2` for full documentation.
       """
       def insert_or_update(changeset, opts \\ []) do
-        unquote(__MODULE__).__exec_on_primary__(:insert_or_update, [changeset, opts])
+        unquote(__MODULE__).__exec_on_primary__(:insert_or_update, [changeset, opts], opts)
       end
 
       @doc """
@@ -203,7 +203,7 @@ defmodule Fly.Repo do
       See `Ecto.Repo.insert_or_update!/2` for full documentation.
       """
       def insert_or_update!(changeset, opts \\ []) do
-        unquote(__MODULE__).__exec_on_primary__(:insert_or_update!, [changeset, opts])
+        unquote(__MODULE__).__exec_on_primary__(:insert_or_update!, [changeset, opts], opts)
       end
 
       @doc """
@@ -303,7 +303,7 @@ defmodule Fly.Repo do
       See `Ecto.Repo.update/2` for full documentation.
       """
       def update(changeset, opts \\ []) do
-        unquote(__MODULE__).__exec_on_primary__(:update, [changeset, opts])
+        unquote(__MODULE__).__exec_on_primary__(:update, [changeset, opts], opts)
       end
 
       @doc """
@@ -312,7 +312,7 @@ defmodule Fly.Repo do
       See `Ecto.Repo.update!/2` for full documentation.
       """
       def update!(changeset, opts \\ []) do
-        unquote(__MODULE__).__exec_on_primary__(:update!, [changeset, opts])
+        unquote(__MODULE__).__exec_on_primary__(:update!, [changeset, opts], opts)
       end
 
       @doc """
@@ -321,15 +321,21 @@ defmodule Fly.Repo do
       See `Ecto.Repo.update_all/3` for full documentation.
       """
       def update_all(queryable, updates, opts \\ []) do
-        unquote(__MODULE__).__exec_on_primary__(:update_all, [queryable, updates, opts])
+        unquote(__MODULE__).__exec_on_primary__(:update_all, [queryable, updates, opts], opts)
       end
 
       def __exec_local__(func, args) do
         apply(@local_repo, func, args)
       end
 
-      def __exec_on_primary__(func, args) do
-        Fly.Postgres.rpc_and_wait(@local_repo, func, args, timeout: @timeout)
+      def __exec_on_primary__(func, args, opts) do
+        # Default behavior is to wait for replication. If `:await` is set to
+        # false/falsey then skip the LSN query and waiting for replication.
+        if Keyword.get(opts, :await, true) do
+          Fly.Postgres.rpc_and_wait(@local_repo, func, args, timeout: @timeout)
+        else
+          Fly.rpc_primary(@local_repo, func, args, timeout: @timeout)
+        end
       end
     end
   end

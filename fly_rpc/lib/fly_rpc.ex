@@ -65,6 +65,21 @@ defmodule Fly.RPC do
     end
   end
 
+  @doc """
+  Execute the MFA in the desired Fly region.
+
+  Supports the string name of the region or `:primary` for the current
+  configured primary region.
+
+  ## Example
+
+      > RPC.rpc_region("hkg", Kernel, :+, [1, 2])
+      3
+
+      > RPC.rpc_region(:primary, Kernel, :+, [1, 2])
+      3
+  """
+  @spec rpc_region(region :: :primary | String.t(), module(), atom(), [any()], keyword()) :: any()
   def rpc_region(region, module, func, args, opts \\ [])
 
   def rpc_region(:primary, module, func, args, opts) do

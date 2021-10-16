@@ -108,9 +108,11 @@ defmodule Fly.Postgres do
 
   @doc """
   Execute the MFA (Module, Function, Arguments) on a node in the primary region.
+  This waits for the data to be replicated to the current node before continuing
+  on.
+
   This presumes the primary region has direct access to a writable primary
-  Postgres database. This waits for the data to be replicated to the current
-  node before continuing on.
+  Postgres database.
   """
   def rpc_and_wait(module, func, args, opts \\ []) do
     {lsn_value, result} =

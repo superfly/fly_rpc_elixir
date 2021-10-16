@@ -185,5 +185,40 @@ the local replica.
 In this way, it becomes seamless for you and your code! You get the benefits of
 being globally distributed and running closer to your users without re-designing your application!
 
-### Explicit Usage
+By default, a Repo function that modifies the database is proxied to the server
+and it waits for the data to be replicated locally before continuing. Using the `await: false` option instructs the proxy code to not wait for replication. This is fine when you only need the function result or the data is not immediately needed locally.
 
+```elixir
+MyApp.Repo.insert(changeset, await: false)
+MyApp.Repo.delete(item, await: false)
+```
+
+### Explicit RPC Usage
+
+When business logic code makes a number of changes or does some back and forth with the database, the "Automatic Usage" will be too slow. An example is looping though a list and doing a database insert for each iteration. Waiting for the insert to complete and be locally replicated will be very slow.
+
+For those cases, call the function that does all the database work and have it done in the primary region where it is physically close to the database.
+
+```elixir
+Fly.Postgres.rpc_and_wait(MyModule, :do_complex_work, [arg1, arg2])
+```
+
+The function will be executed in the primary region and it blocks locally until any relevant database changes are replicated locally.
+
+### RPC but don't Wait for Replication
+
+Sometimes you might not want to wait for DB replication. Perhaps it's a fire-and-forget or the function result is enough.
+
+For this case, you can use the `fly_rpc` library directly.
+
+```elixir
+Fly.rpc_primary(MyModule, :do_work, [arg1, arg2])
+```
+
+This is a convenience function which is equivalent to the following:
+
+```elixir
+Fly.RPC.rpc_region(:primary, MyModule, :do_work, [arg1, arg2])
+```
+
+This can be used for working with the database too.
