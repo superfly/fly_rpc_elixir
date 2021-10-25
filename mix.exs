@@ -8,7 +8,7 @@ defmodule Fly.MixProject do
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       name: "Fly RPC",
-      source_url: "https://github.com/superfly/fly_rpc_elixir/tree/main/fly_rpc",
+      source_url: "https://github.com/superfly/fly_rpc_elixir",
       description: description(),
       deps: deps(),
       package: package(),
@@ -47,10 +47,10 @@ defmodule Fly.MixProject do
 
   defp package do
     [
-      files: ["lib", "mix.exs", "README*", "../LICENSE*"],
+      files: ["lib", "mix.exs", "README*", "LICENSE*"],
       maintainers: ["Mark Ericksen"],
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => "https://github.com/superfly/fly_rpc_elixir/tree/main/fly_rpc"}
+      links: %{"GitHub" => "https://github.com/superfly/fly_rpc_elixir"}
     ]
   end
 end

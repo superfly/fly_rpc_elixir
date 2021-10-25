@@ -24,7 +24,7 @@ Through ENV configuration, you can to tell the app which region is the "primary"
 This example configuration says that the Sydney Australia region is the
 "primary" region.
 
-```toml
+```yaml
 [env]
   PRIMARY_REGION = "syd"
 ```
