@@ -26,7 +26,8 @@ defmodule Fly.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_doc, "~> 0.25", only: :dev}
+      {:ex_doc, "~> 0.25", only: :dev},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
     ]
   end
 

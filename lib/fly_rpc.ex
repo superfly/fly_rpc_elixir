@@ -35,6 +35,10 @@ defmodule Fly.RPC do
   use GenServer
   require Logger
 
+  @type region :: String.t() | :primary
+  # reference: tid() "table identifier"
+  @type tab :: atom() | reference()
+
   @tab :fly_regions
 
   def start_link(opts) do
@@ -44,6 +48,7 @@ defmodule Fly.RPC do
   @doc """
   Returns the Elixir OTP nodes registered the region. Reads from a local cache.
   """
+  # @spec region_nodes(tab, region) :: [node]
   def region_nodes(tab \\ @tab, region) do
     case :ets.lookup(tab, region) do
       [{^region, nodes}] -> nodes
@@ -56,6 +61,7 @@ defmodule Fly.RPC do
 
   Returns `:error` if RPC is not supported on remote node.
   """
+  @spec region(node) :: {:ok, any()} | :error
   def region(node) do
     if is_rpc_supported?(node) do
       {:ok, rpc(node, Fly, :my_region, [])}
@@ -66,10 +72,16 @@ defmodule Fly.RPC do
   end
 
   @doc """
-  Execute the MFA in the desired Fly region.
+  Executes the MFA on an available node in the desired region.
 
-  Supports the string name of the region or `:primary` for the current
-  configured primary region.
+  If the region is the "primary" region or the "local" region then execute the
+  function immediately. Supports the string name of the region or `:primary` for
+  the current configured primary region.
+
+  Otherwise find an available node and select one at random to execute the
+  function.
+
+  Raises `ArgumentError` when no available nodes.
 
   ## Example
 
@@ -78,8 +90,9 @@ defmodule Fly.RPC do
 
       > RPC.rpc_region(:primary, Kernel, :+, [1, 2])
       3
+
   """
-  @spec rpc_region(region :: :primary | String.t(), module(), atom(), [any()], keyword()) :: any()
+  @spec rpc_region(region(), module(), func :: atom(), [any()], keyword()) :: any()
   def rpc_region(region, module, func, args, opts \\ [])
 
   def rpc_region(:primary, module, func, args, opts) do
@@ -107,6 +120,7 @@ defmodule Fly.RPC do
 
   Exits after `timeout` milliseconds.
   """
+  @spec rpc(node, module, func :: atom(), args :: [any], non_neg_integer()) :: any()
   def rpc(node, module, func, args, timeout \\ 5000) do
     verbose_log(:info, fn ->
       "RPC REQ from #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
@@ -152,6 +166,7 @@ defmodule Fly.RPC do
 
   Support may not exist on the remote node in a "first roll out" scenario.
   """
+  @spec is_rpc_supported?(node) :: boolean()
   def is_rpc_supported?(node) do
     # note: use :erpc.call once erlang 23+ is reauired
     case :rpc.call(node, Kernel, :function_exported?, [Fly, :my_region, 0], 5000) do

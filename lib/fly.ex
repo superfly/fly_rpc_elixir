@@ -8,6 +8,7 @@ defmodule Fly do
   Return the configured primary region. Reads and requires an ENV setting for
   `PRIMARY_REGION`.
   """
+  @spec primary_region() :: String.t()
   def primary_region do
     System.fetch_env!("PRIMARY_REGION")
   end
@@ -16,6 +17,7 @@ defmodule Fly do
   Return the configured current region. Reads the `FLY_REGION` ENV setting
   that's available when deployed on the Fly.io platform.
   """
+  @spec my_region() :: String.t()
   def my_region do
     System.fetch_env!("FLY_REGION")
   end
