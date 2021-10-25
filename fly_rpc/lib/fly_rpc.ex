@@ -35,9 +35,9 @@ defmodule Fly.RPC do
   use GenServer
   require Logger
 
-  @type region :: String.t() | :atom
+  @type region :: String.t() | :primary
   # reference: tid() "table identifier"
-  @type tab :: :atom | reference()
+  @type tab :: atom() | reference()
 
   @tab :fly_regions
 
@@ -72,17 +72,27 @@ defmodule Fly.RPC do
   end
 
   @doc """
-  Executes a function on an available node for a given region.
+  Executes the MFA on an available node in the desired region.
 
-  If the region is the "primary" region or the "local" region
-  then execute the function immediately.
+  If the region is the "primary" region or the "local" region then execute the
+  function immediately. Supports the string name of the region or `:primary` for
+  the current configured primary region.
 
-  Otherwise find an available node and select one at random to
-  execute the function.
+  Otherwise find an available node and select one at random to execute the
+  function.
 
   Raises `ArgumentError` when no available nodes.
+
+  ## Example
+
+      > RPC.rpc_region("hkg", Kernel, :+, [1, 2])
+      3
+
+      > RPC.rpc_region(:primary, Kernel, :+, [1, 2])
+      3
+
   """
-  @spec rpc_region(region, module(), func :: atom, args :: [any], opts :: keyword) :: any()
+  @spec rpc_region(region(), module(), func :: atom(), [any()], keyword()) :: any()
   def rpc_region(region, module, func, args, opts \\ [])
 
   def rpc_region(:primary, module, func, args, opts) do
@@ -110,10 +120,10 @@ defmodule Fly.RPC do
 
   Exits after `timeout` milliseconds.
   """
-  @spec rpc(node, module, func :: atom, args :: [any], non_neg_integer()) :: any()
+  @spec rpc(node, module, func :: atom(), args :: [any], non_neg_integer()) :: any()
   def rpc(node, module, func, args, timeout \\ 5000) do
     verbose_log(:info, fn ->
-      "Starting RPC from #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
+      "RPC REQ from #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
     end)
 
     caller = self()
@@ -128,14 +138,14 @@ defmodule Fly.RPC do
     receive do
       {^ref, result} ->
         verbose_log(:info, fn ->
-          "RECEIVED RPC in #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
+          "RPC RECV response in #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
         end)
 
         result
     after
       timeout ->
         verbose_log(:error, fn ->
-          "TIMEOUT for RPC in #{Fly.my_region()} calling #{Fly.mfa_string(module, func, args)}"
+          "RPC TIMEOUT in #{Fly.my_region()} calling #{Fly.mfa_string(module, func, args)}"
         end)
 
         exit(:timeout)
