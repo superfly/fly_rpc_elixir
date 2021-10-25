@@ -4,7 +4,7 @@ defmodule Fly.MixProject do
   def project do
     [
       app: :fly_rpc,
-      version: "0.1.4",
+      version: "0.1.5",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       name: "Fly RPC",
