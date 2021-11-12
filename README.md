@@ -85,6 +85,14 @@ Underneath the call, it's using `Node.spawn_link/4`. This spawns a new process o
 
 By blocking the process, this makes it much easier to reason about your application code.
 
+
+The following is a convenience function for performing work on the primary.
+
+```elixir
+Fly.rpc_primary(String, :upcase, ["fly"])
+#=> "FLY"
+```
+
 ## Features
 
 - [ ] Instrument with telemetry
