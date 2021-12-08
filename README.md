@@ -93,6 +93,38 @@ Fly.rpc_primary(String, :upcase, ["fly"])
 #=> "FLY"
 ```
 
+## Local Development
+
+When doing local development, without updating some settings, you will see an error like:
+
+```
+(ArgumentError) could not fetch environment variable "PRIMARY_REGION" because it is not set
+```
+
+There are 2 ENV values that need to be set for local development work.
+
+- `FLY_REGION` - Fly.io tells you which region your app is running in.
+- `PRIMARY_REGION` - You tell Fly.io which region is your "primary".
+
+When you are running locally, the `FLY_REGION` isn't being set since the app isn't on Fly.io. Also, the `PRIMARY_REGION` set in your `fly.toml` file isn't being used. We just need a way to set those values when the application is running locally.
+
+I like using [direnv](https://direnv.net/) to automatically set and load ENV values when I enter specific directories. Using `direnv`, you can create a file named `.envrc` in your project directory. Add the following lines:
+
+```
+export FLY_REGION=xyz
+export PRIMARY_REGION=xyz
+```
+
+This tells the app that it's running in the primary region. It will connect to the database and perform writes directly.
+
+Another option is to start you application like this:
+
+```
+FLY_REGION=xyz PRIMARY_REGION=xyz iex -S mix phx.server
+```
+
+You can also create a bash script file named `start` and have it perform the above command.
+
 ## Features
 
 - [ ] Instrument with telemetry
