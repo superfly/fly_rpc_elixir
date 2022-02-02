@@ -5,12 +5,24 @@ defmodule Fly do
   """
 
   @doc """
+  Returns true if currently running on Fly.io
+  """
+  @spec running_in_fly?() :: boolean()
+  def running_in_fly?() do
+    System.fetch_env("FLY_REGION") != :error
+  end
+
+  @doc """
   Return the configured primary region. Reads and requires an ENV setting for
   `PRIMARY_REGION`.
   """
   @spec primary_region() :: String.t()
   def primary_region do
-    System.fetch_env!("PRIMARY_REGION")
+    if running_in_fly?() do
+      System.fetch_env!("PRIMARY_REGION")
+    else
+      "local"
+    end
   end
 
   @doc """
@@ -19,7 +31,11 @@ defmodule Fly do
   """
   @spec my_region() :: String.t()
   def my_region do
-    System.fetch_env!("FLY_REGION")
+    if running_in_fly?() do
+      System.fetch_env!("FLY_REGION")
+    else
+      "local"
+    end
   end
 
   @doc """
