@@ -6,20 +6,35 @@ defmodule Fly do
 
   @doc """
   Return the configured primary region. Reads and requires an ENV setting for
-  `PRIMARY_REGION`.
+  `PRIMARY_REGION`. If not set, it returns `"local"`.
   """
   @spec primary_region() :: String.t()
   def primary_region do
-    System.fetch_env!("PRIMARY_REGION")
+    case System.fetch_env("PRIMARY_REGION") do
+      {:ok, region} ->
+        region
+
+      :error ->
+        System.put_env("PRIMARY_REGION", "local")
+        "local"
+    end
   end
 
   @doc """
   Return the configured current region. Reads the `FLY_REGION` ENV setting
-  that's available when deployed on the Fly.io platform.
+  that's available when deployed on the Fly.io platform. If not set, it returns
+  `"local"`.
   """
   @spec my_region() :: String.t()
   def my_region do
-    System.fetch_env!("FLY_REGION")
+    case System.fetch_env("FLY_REGION") do
+      {:ok, region} ->
+        region
+
+      :error ->
+        System.put_env("FLY_REGION", "local")
+        "local"
+    end
   end
 
   @doc """
