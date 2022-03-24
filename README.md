@@ -58,9 +58,6 @@ local ETS table for fast access.
 The Fly.io platform already provides and ENV value of `FLY_REGION` which this library accesses.
 
 ```elixir
-Fly.running_in_fly?()
-#=> true
-
 Fly.primary_region()
 #=> "syd"
 
@@ -98,12 +95,12 @@ Fly.rpc_primary(String, :upcase, ["fly"])
 
 ## Local Development
 
-When doing local development, the local and primary regions will be set to "local". However, if you want to simulate running in Fly.io locally, you can set the `FLY_REGION` and `PRIMARY_REGION` environment variables:
+When doing local development, the local and primary regions will be set to "local" by default. However, if you want to simulate running in a non-primary region locally, you can set the `FLY_REGION` and `PRIMARY_REGION` environment variables explicitly:
 
 - `FLY_REGION` - Fly.io tells you which region your app is running in.
-- `PRIMARY_REGION` - You tell Fly.io which region is your "primary".
+- `PRIMARY_REGION` - You tell the library which Fly.io region is your "primary".
 
-When you are running locally, the `FLY_REGION` isn't being set since the app isn't on Fly.io. Also, the `PRIMARY_REGION` set in your `fly.toml` file isn't being used. We just need a way to set those values when the application is running locally.
+When running locally, the `FLY_REGION` isn't set since the app isn't on Fly.io. Also, the `PRIMARY_REGION` set in your `fly.toml` file isn't being used. We just need a way to set those values when the application is running locally.
 
 I like using [direnv](https://direnv.net/) to automatically set and load ENV values when I enter specific directories. Using `direnv`, you can create a file named `.envrc` in your project directory. Add the following lines:
 
