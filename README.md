@@ -58,6 +58,9 @@ local ETS table for fast access.
 The Fly.io platform already provides and ENV value of `FLY_REGION` which this library accesses.
 
 ```elixir
+Fly.running_in_fly?()
+#=> true
+
 Fly.primary_region()
 #=> "syd"
 
@@ -95,13 +98,7 @@ Fly.rpc_primary(String, :upcase, ["fly"])
 
 ## Local Development
 
-When doing local development, without updating some settings, you will see an error like:
-
-```
-(ArgumentError) could not fetch environment variable "PRIMARY_REGION" because it is not set
-```
-
-There are 2 ENV values that need to be set for local development work.
+When doing local development, the local and primary regions will be set to "local". However, if you want to simulate running in Fly.io locally, you can set the `FLY_REGION` and `PRIMARY_REGION` environment variables:
 
 - `FLY_REGION` - Fly.io tells you which region your app is running in.
 - `PRIMARY_REGION` - You tell Fly.io which region is your "primary".
