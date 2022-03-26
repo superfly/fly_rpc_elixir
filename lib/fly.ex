@@ -5,14 +5,6 @@ defmodule Fly do
   """
 
   @doc """
-  Returns true if currently running on Fly.io
-  """
-  @spec running_in_fly?() :: boolean()
-  def running_in_fly?() do
-    System.fetch_env("FLY_REGION") != :error
-  end
-
-  @doc """
   Return the configured primary region. Reads and requires an ENV setting for
   `PRIMARY_REGION`. If not set, it returns `"local"`.
   """

@@ -58,9 +58,6 @@ local ETS table for fast access.
 The Fly.io platform already provides and ENV value of `FLY_REGION` which this library accesses.
 
 ```elixir
-Fly.running_in_fly?()
-#=> true
-
 Fly.primary_region()
 #=> "syd"
 
