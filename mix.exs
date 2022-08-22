@@ -4,7 +4,7 @@ defmodule Fly.MixProject do
   def project do
     [
       app: :fly_rpc,
-      version: "0.1.6",
+      version: "0.2.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       name: "Fly RPC",
@@ -33,7 +33,7 @@ defmodule Fly.MixProject do
 
   defp description do
     """
-    Library for making RPC calls to nodes in other Fly.io regions.
+    Library for making RPC calls to nodes in other fly.io regions. Specifically designed to make it easier to execute code in the "primary" region.
     """
   end
 
