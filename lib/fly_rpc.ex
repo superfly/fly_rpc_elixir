@@ -168,7 +168,7 @@ defmodule Fly.RPC do
   """
   @spec is_rpc_supported?(node) :: boolean()
   def is_rpc_supported?(node) do
-    # note: use :erpc.call once erlang 23+ is reauired
+    # note: use :erpc.call once erlang 23+ is required
     case :rpc.call(node, Kernel, :function_exported?, [Fly, :my_region, 0], 5000) do
       result when is_boolean(result) ->
         result
