@@ -108,7 +108,7 @@ By default, the value `"local"` is used for the regions. This works perfectly fo
 
 ## Explicitly Set the Region
 
-When running locally and we explicitly want to set the regions, the `MY_REGION` isn't set since the app isn't on Fly.io. Also, the `PRIMARY_REGION` specified in out `fly.toml` file isn't referenced. We just need a way to set those values when the application is running locally.
+When running locally and we explicitly want to set the regions, the `MY_REGION` isn't set since the app isn't on Fly.io. Also, the `PRIMARY_REGION` specified in our `fly.toml` file isn't referenced. We just need a way to set those values when the application is running locally.
 
 I like using [direnv](https://direnv.net/) to automatically set and load ENV values when I enter specific directories. Using `direnv`, you can create a file named `.envrc` in your project directory. Add the following lines:
 
