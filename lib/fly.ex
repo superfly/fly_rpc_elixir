@@ -22,18 +22,23 @@ defmodule Fly do
 
   @doc """
   Return the configured current region. Reads the `FLY_REGION` ENV setting
-  that's available when deployed on the Fly.io platform. If not set, it returns
-  `"local"`.
+  available when deployed on the Fly.io platform. When running on a different
+  platform, that ENV value will not be set. Setting the `MY_REGION` ENV value
+  instructs the node how to identify what "region" it is in. If not set, it
+  returns `"local"`.
+
+  The value itself is not important. If the value matches the value for the
+  `PRIMARY_REGION` then it behaves as though it is the primary.
   """
   @spec my_region() :: String.t()
   def my_region do
-    case System.fetch_env("FLY_REGION") do
-      {:ok, region} ->
-        region
-
-      :error ->
-        System.put_env("FLY_REGION", "local")
+    case System.get_env("FLY_REGION") || System.get_env("MY_REGION") do
+      nil ->
+        System.put_env("MY_REGION", "local")
         "local"
+
+      region ->
+        region
     end
   end
 
