@@ -1,34 +1,42 @@
 defmodule Fly.RPCTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   doctest Fly.RPC, import: true
 
-  alias Fly.RPC
-
-  # describe "put_node/2" do
-  #   test "if new node doesn't support RPC, no change"
-
-  #   test "if node supports RPC, track node and it's region"
-  # end
-
-  describe "drop_node/2" do
-    test "handles a node dropping that isn't in the cache or state" do
-      tab = :ets.new(:test_empty_table, [:named_table, :public, read_concurrency: true])
-      state = %{nodes: MapSet.new(), tab: tab}
-      new_state = RPC.drop_node(state, :"missing@127.0.0.1")
-      assert new_state == state
+  describe "primary_region/0" do
+    test "when no primary set, returns local" do
+      delete_env_if_present("PRIMARY_REGION")
+      assert "local" == Fly.RPC.primary_region()
     end
 
-    test "removes a known entry from the cache and from state" do
-      nodes = MapSet.new([{:"stays@1.1.1.1", "hkg"}, {:"removed@2.2.2.2", "hkg"}])
-      tab = :ets.new(:test_empty_table, [:named_table, :public, read_concurrency: true])
-      :ets.insert(tab, {"hkg", [:"stays@1.1.1.1", :"removed@2.2.2.2"]})
-      state = %{nodes: nodes, tab: tab}
+    test "returns ENV for PRIMARY_REGION when set" do
+      System.put_env("PRIMARY_REGION", "abc")
+      assert "abc" == Fly.RPC.primary_region()
+    end
+  end
 
-      new_state = RPC.drop_node(state, :"removed@2.2.2.2")
-      assert new_state != state
-      assert new_state.nodes == MapSet.new([{:"stays@1.1.1.1", "hkg"}])
-      assert [:"stays@1.1.1.1"] == RPC.region_nodes(:test_empty_table, "hkg")
+  describe "my_region/0" do
+    test "when no FLY_REGION set, use MY_REGION" do
+      delete_env_if_present("FLY_REGION")
+      System.put_env("MY_REGION", "custom")
+      assert "custom" == Fly.RPC.my_region()
+    end
+
+    test "when no FLY_REGION and no MY_REGION set, sets to local" do
+      delete_env_if_present("FLY_REGION")
+      delete_env_if_present("MY_REGION")
+      assert "local" == Fly.RPC.my_region()
+    end
+
+    test "returns ENV for FLY_REGION when set" do
+      System.put_env("FLY_REGION", "abc")
+      assert "abc" == Fly.RPC.my_region()
+    end
+  end
+
+  defp delete_env_if_present(varname) do
+    if System.get_env(varname) do
+      System.delete_env(varname)
     end
   end
 end

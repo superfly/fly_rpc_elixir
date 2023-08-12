@@ -1,11 +1,24 @@
 defmodule Fly.RPC do
   @moduledoc """
-  Provides an RPC interface for executing an MFA on a node within a region.
+  Performs RPC calls to nodes in Fly.io regions.
+
+  Provides features to help Elixir applications more easily take advantage
+  of the features that Fly.io provides.
 
   ## Configuration
 
   Assumes each node is running the `Fly.RPC` server in its supervision tree and
   exports `FLY_REGION` environment variable to identify the fly region.
+
+  *Note*: anonymous function support only works when the release is identical
+  across all nodes. This can be ensured by including the `FLY_IMAGE_REF` as part of
+  the node name in your `rel/env.sh.eex` file:
+
+      #!/bin/sh
+
+      export ERL_AFLAGS="-proto_dist inet6_tcp"
+      export RELEASE_DISTRIBUTION=name
+      export RELEASE_NODE="${FLY_APP_NAME}-${FLY_IMAGE_REF##*-}@${FLY_PRIVATE_IP}"
 
   To run code on a specific region call `rpc_region/4`. A node found within the
   given region will be chosen at random. Raises if no nodes exist on the given
@@ -16,13 +29,16 @@ defmodule Fly.RPC do
 
   ## Examples
 
-      > rpc_region("hkg", String, :upcase, ["fly"])
+      > rpc_region("hkg", fn -> String.upcase("fly") end)
       "FLY"
 
-      > rpc_region(Fly.primary_region(), String, :upcase, ["fly"])
+      > rpc_region("hkg", {String, :upcase, ["fly"]})
       "FLY"
 
-      > rpc_region(:primary, String, :upcase, ["fly"])
+      > rpc_region(Fly.RPC.primary_region(), {String, :upcase, ["fly"]])
+      "FLY"
+
+      > rpc_region(:primary, {String, :upcase, ["fly"]})
       "FLY"
 
   ## Server
@@ -35,11 +51,50 @@ defmodule Fly.RPC do
   use GenServer
   require Logger
 
-  @type region :: String.t() | :primary
-  # reference: tid() "table identifier"
-  @type tab :: atom() | reference()
-
   @tab :fly_regions
+
+  @doc """
+  Return the configured primary region.
+
+  Reads and requires an ENV setting for `PRIMARY_REGION`.
+  If not set, it returns `"local"`.
+  """
+  def primary_region do
+    case System.fetch_env("PRIMARY_REGION") do
+      {:ok, region} -> region
+      :error -> "local"
+    end
+  end
+
+  @doc """
+  Return the configured current region.
+
+  Reads the `FLY_REGION` ENV setting
+  available when deployed on the Fly.io platform. When running on a different
+  platform, that ENV value will not be set. Setting the `MY_REGION` ENV value
+  instructs the node how to identify what "region" it is in. If not set, it
+  returns `"local"`.
+
+  The value itself is not important. If the value matches the value for the
+  `PRIMARY_REGION` then it behaves as though it is the primary.
+  """
+  def my_region do
+    case System.get_env("FLY_REGION") || System.get_env("MY_REGION") do
+      nil ->
+        System.put_env("MY_REGION", "local")
+        "local"
+
+      region ->
+        region
+    end
+  end
+
+  @doc """
+  Return if the app instance is running in the primary region or not.
+  """
+  def is_primary? do
+    my_region() == primary_region()
+  end
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -48,7 +103,6 @@ defmodule Fly.RPC do
   @doc """
   Returns the Elixir OTP nodes registered the region. Reads from a local cache.
   """
-  # @spec region_nodes(tab, region) :: [node]
   def region_nodes(tab \\ @tab, region) do
     case :ets.lookup(tab, region) do
       [{^region, nodes}] -> nodes
@@ -61,12 +115,11 @@ defmodule Fly.RPC do
 
   Returns `:error` if RPC is not supported on remote node.
   """
-  @spec region(node) :: {:ok, any()} | :error
   def region(node) do
     if is_rpc_supported?(node) do
-      {:ok, rpc(node, Fly, :my_region, [])}
+      {:ok, rpc(node, {__MODULE__, :my_region, []})}
     else
-      Logger.info("Detected Fly RPC support is not available on node #{inspect(node)}")
+      Logger.info("Detected Fly.RPC support is not available on node #{inspect(node)}")
       :error
     end
   end
@@ -85,23 +138,25 @@ defmodule Fly.RPC do
 
   ## Example
 
-      > RPC.rpc_region("hkg", Kernel, :+, [1, 2])
+      > RPC.rpc_region("hkg", fn -> 1 + 2 end)
       3
 
-      > RPC.rpc_region(:primary, Kernel, :+, [1, 2])
+      > RPC.rpc_region("hkg", {Kernel, :+, [1, 2]})
+      3
+
+      > RPC.rpc_region(:primary, {Kernel, :+, [1, 2]})
       3
 
   """
-  @spec rpc_region(region(), module(), func :: atom(), [any()], keyword()) :: any()
-  def rpc_region(region, module, func, args, opts \\ [])
+  def rpc_region(region, func, opts \\ [])
 
-  def rpc_region(:primary, module, func, args, opts) do
-    rpc_region(Fly.primary_region(), module, func, args, opts)
-  end
+  def rpc_region(region, func, opts)
+      when (is_binary(region) or region == :primary) and (is_function(func, 0) or is_tuple(func)) and
+             is_list(opts) do
+    region = if region == :primary, do: primary_region(), else: region
 
-  def rpc_region(region, module, func, args, opts) when is_binary(region) do
-    if region == Fly.my_region() do
-      apply(module, func, args)
+    if region == my_region() do
+      invoke(func)
     else
       timeout = Keyword.get(opts, :timeout, 5_000)
       available_nodes = region_nodes(region)
@@ -111,53 +166,61 @@ defmodule Fly.RPC do
 
       node = Enum.random(available_nodes)
 
-      rpc(node, module, func, args, timeout)
+      rpc(node, func, timeout)
     end
   end
+
+  def rpc_region(region, {mod, func, args}, opts)
+      when is_binary(region) and is_atom(mod) and is_list(args) and is_list(opts) do
+    rpc_region(region, fn -> apply(mod, func, args) end, opts)
+  end
+
+  @doc """
+  Execute the MFA on a node in the primary region.
+  """
+  def rpc_primary(func, opts \\ [])
+
+  def rpc_primary(func, opts) when is_function(func, 0) do
+    rpc_region(:primary, func, opts)
+  end
+
+  def rpc_primary({module, func, args}, opts) do
+    rpc_region(:primary, {module, func, args}, opts)
+  end
+
+  defp invoke(func) when is_function(func, 0), do: func.()
+  defp invoke({mod, func, args}), do: apply(mod, func, args)
 
   @doc """
   Executes the function on the remote node and waits for the response.
 
   Exits after `timeout` milliseconds.
   """
-  @spec rpc(node, module, func :: atom(), args :: [any], non_neg_integer()) :: any()
-  def rpc(node, module, func, args, timeout \\ 5000) do
-    verbose_log(:info, fn ->
-      "RPC REQ from #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
-    end)
+  def rpc(node, func, timeout \\ 5000) do
+    verbose_log(:info, func, "SEND")
 
-    caller = self()
-    ref = make_ref()
-
-    # Perform the RPC call to the remote node and wait for the response
-    _pid =
-      Node.spawn_link(node, __MODULE__, :__local_rpc__, [
-        [caller, ref, module, func | args]
-      ])
-
-    receive do
-      {^ref, result} ->
-        verbose_log(:info, fn ->
-          "RPC RECV response in #{Fly.my_region()} for #{Fly.mfa_string(module, func, args)}"
-        end)
+    case erpc_call(node, func, timeout) do
+      {:ok, result} ->
+        verbose_log(:info, func, "RESP")
 
         result
-    after
-      timeout ->
-        verbose_log(:error, fn ->
-          "RPC TIMEOUT in #{Fly.my_region()} calling #{Fly.mfa_string(module, func, args)}"
-        end)
 
+      {:error, {:erpc, :timeout}} ->
+        verbose_log(:error, func, "TIMEOUT")
         exit(:timeout)
-    end
-  end
 
-  @doc false
-  # Private function that can be executed on a remote node in the cluster. Used
-  # to execute arbitrary function from a trusted caller.
-  def __local_rpc__([caller, ref, module, func | args]) do
-    result = apply(module, func, args)
-    send(caller, {ref, result})
+      {:error, {:erpc, reason}} ->
+        {:error, {:erpc, reason}}
+
+      {:error, {:throw, value}} ->
+        throw(value)
+
+      {:error, {:exit, reason}} ->
+        exit(reason)
+
+      {:error, {_exception, reason, stack}} ->
+        reraise(reason, stack)
+    end
   end
 
   @doc """
@@ -166,16 +229,36 @@ defmodule Fly.RPC do
 
   Support may not exist on the remote node in a "first roll out" scenario.
   """
-  @spec is_rpc_supported?(node) :: boolean()
   def is_rpc_supported?(node) do
-    # note: use :erpc.call once erlang 23+ is required
-    case :rpc.call(node, Kernel, :function_exported?, [Fly, :my_region, 0], 5000) do
-      result when is_boolean(result) ->
+    case erpc_call(node, {Kernel, :function_exported?, [__MODULE__, :my_region, 0]}, 5000) do
+      {:ok, result} when is_boolean(result) ->
         result
 
-      {:badrpc, reason} ->
-        Logger.warn("Failed RPC supported test on node #{inspect(node)}, got: #{inspect(reason)}")
+      {:error, reason} ->
+        Logger.warn("Failed RPC supported test on #{inspect(node)}, got: #{inspect(reason)}")
         false
+    end
+  end
+
+  defp erpc_call(node, {mod, func, args}, timeout) do
+    try do
+      {:ok, :erpc.call(node, mod, func, args, timeout)}
+    catch
+      :throw, value -> {:error, {:throw, value}}
+      :exit, reason -> {:error, {:exit, reason}}
+      :error, {:erpc, reason} -> {:error, {:erpc, reason}}
+      :error, {exception, reason, stack} -> {:error, {exception, reason, stack}}
+    end
+  end
+
+  defp erpc_call(node, func, timeout) when is_function(func, 0) do
+    try do
+      {:ok, :erpc.call(node, func, timeout)}
+    catch
+      :throw, value -> {:error, {:throw, value}}
+      :exit, reason -> {:error, {:exit, reason}}
+      :error, {:erpc, reason} -> {:error, {:erpc, reason}}
+      :error, {exception, reason, stack} -> {:error, {exception, reason, stack}}
     end
   end
 
@@ -190,7 +273,7 @@ defmodule Fly.RPC do
 
   def handle_continue(:get_node_regions, state) do
     new_state =
-      Enum.reduce(Node.list(), state, fn node_name, acc ->
+      Enum.reduce(Node.list(:visible), state, fn node_name, acc ->
         put_node(acc, node_name)
       end)
 
@@ -201,14 +284,11 @@ defmodule Fly.RPC do
     Logger.debug("nodeup #{node_name}")
 
     # Only react/track visible nodes (hidden ones are for IEx, etc)
-    new_state =
-      if node_name in Node.list(:visible) do
-        put_node(state, node_name)
-      else
-        state
-      end
-
-    {:noreply, new_state}
+    if node_name in Node.list(:visible) do
+      {:noreply, put_node(state, node_name)}
+    else
+      {:noreply, state}
+    end
   end
 
   def handle_info({:nodedown, node_name}, state) do
@@ -269,9 +349,15 @@ defmodule Fly.RPC do
     Enum.find(state.nodes, fn {n, _region} -> n == name end)
   end
 
-  defp verbose_log(kind, func) do
+  defp verbose_log(kind, func, subject) do
     if Application.get_env(:fly_rpc, :verbose_logging) do
-      Logger.log(kind, func)
+      Logger.log(kind, fn -> "RPC #{subject} from #{my_region()} #{mfa_string(func)}" end)
     end
+  end
+
+  defp mfa_string(func) when is_function(func), do: inspect(func)
+
+  defp mfa_string({mod, func, args}) do
+    "#{Atom.to_string(mod)}.#{Atom.to_string(func)}/#{length(args)}"
   end
 end
