@@ -62,13 +62,13 @@ local ETS table for fast access.
 The Fly.io platform already provides and ENV value of `FLY_REGION` which this library accesses and uses as the `MY_REGION`. When using this library on a platform other than [fly.io](https://fly.io), you can supply the ENV `MY_REGION` to identify what "region" the running instance is in. Think of the value as a text label of however you want to identify where it's running.
 
 ```elixir
-Fly.primary_region()
+Fly.RPC.primary_region()
 #=> "syd"
 
-Fly.my_region()
+Fly.RPC.my_region()
 #=> "lax"
 
-Fly.is_primary?()
+Fly.RPC.is_primary?()
 #=> false
 ```
 
@@ -93,7 +93,7 @@ By blocking the process, this makes it much easier to reason about your applicat
 The following is a convenience function for performing work on the primary.
 
 ```elixir
-Fly.rpc_primary(String, :upcase, ["fly"])
+Fly.RPC.rpc_primary(String, :upcase, ["fly"])
 #=> "FLY"
 ```
 
