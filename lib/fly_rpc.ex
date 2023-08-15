@@ -235,7 +235,7 @@ defmodule Fly.RPC do
         result
 
       {:error, reason} ->
-        Logger.warn("Failed RPC supported test on #{inspect(node)}, got: #{inspect(reason)}")
+        Logger.warning("Failed RPC supported test on #{inspect(node)}, got: #{inspect(reason)}")
         false
     end
   end
