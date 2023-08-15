@@ -355,9 +355,11 @@ defmodule Fly.RPC do
     end
   end
 
-  defp mfa_string(func) when is_function(func), do: inspect(func)
+  @doc false
+  # Also used by fly_postgres
+  def mfa_string(func) when is_function(func), do: inspect(func)
 
-  defp mfa_string({mod, func, args}) do
+  def mfa_string({mod, func, args}) do
     "#{Atom.to_string(mod)}.#{Atom.to_string(func)}/#{length(args)}"
   end
 end
